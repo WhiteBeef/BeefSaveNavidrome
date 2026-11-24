@@ -1,0 +1,338 @@
+package server
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/navidrome/navidrome/conf"
+	"github.com/navidrome/navidrome/conf/mime"
+	"github.com/navidrome/navidrome/consts"
+	"github.com/navidrome/navidrome/db"
+	"github.com/navidrome/navidrome/model"
+	"github.com/navidrome/navidrome/persistence"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("serveIndex", func() {
+	var ds model.DataStore
+	var ctx context.Context
+	fs := os.DirFS("tests/fixtures")
+
+	BeforeEach(func() {
+		ctx = GinkgoT().Context()
+		ds = persistence.New(db.Db())
+	})
+
+	It("adds app_config to index.html", func() {
+		r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+		w := httptest.NewRecorder()
+
+		serveIndex(ds, fs, nil)(w, r)
+
+		Expect(w.Code).To(Equal(200))
+		config := extractAppConfig(w.Body.String())
+		Expect(config).To(BeAssignableToTypeOf(map[string]any{}))
+	})
+
+	It("sets firstTime = true when User table is empty", func() {
+		r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+		w := httptest.NewRecorder()
+
+		serveIndex(ds, fs, nil)(w, r)
+
+		config := extractAppConfig(w.Body.String())
+		Expect(config).To(HaveKeyWithValue("firstTime", true))
+	})
+
+	It("sets firstTime = false when User table is not empty", func() {
+		Expect(ds.User().Put(ctx, &model.User{UserName: "johndoe"})).To(Succeed())
+		r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+		w := httptest.NewRecorder()
+
+		serveIndex(ds, fs, nil)(w, r)
+
+		config := extractAppConfig(w.Body.String())
+		Expect(config).To(HaveKeyWithValue("firstTime", false))
+	})
+
+	DescribeTable("sets configuration values",
+		func(configSetter func(*conf.Options), configKey string, expectedValue any) {
+			conf.Update(configSetter)
+			r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+			w := httptest.NewRecorder()
+
+			serveIndex(ds, fs, nil)(w, r)
+
+			config := extractAppConfig(w.Body.String())
+			Expect(config).To(HaveKeyWithValue(configKey, expectedValue))
+		},
+		Entry("baseURL", func(c *conf.Options) { c.BasePath = "base_url_test" }, "baseURL", "base_url_test"),
+		Entry("welcomeMessage", func(c *conf.Options) { c.UIWelcomeMessage = "Hello" }, "welcomeMessage", "Hello"),
+		Entry("maxSidebarPlaylists", func(c *conf.Options) { c.MaxSidebarPlaylists = 42 }, "maxSidebarPlaylists", float64(42)),
+		Entry("enableTranscodingConfig", func(c *conf.Options) { c.EnableTranscodingConfig = true }, "enableTranscodingConfig", true),
+		Entry("enableDownloads", func(c *conf.Options) { c.EnableDownloads = true }, "enableDownloads", true),
+		Entry("enableFavourites", func(c *conf.Options) { c.EnableFavourites = true }, "enableFavourites", true),
+		Entry("enableStarRating", func(c *conf.Options) { c.EnableStarRating = true }, "enableStarRating", true),
+		Entry("defaultTheme", func(c *conf.Options) { c.DefaultTheme = "Light" }, "defaultTheme", "Light"),
+		Entry("defaultLanguage", func(c *conf.Options) { c.DefaultLanguage = "pt" }, "defaultLanguage", "pt"),
+		Entry("defaultUIVolume", func(c *conf.Options) { c.DefaultUIVolume = 45 }, "defaultUIVolume", float64(45)),
+		Entry("uiSearchDebounceMs", func(c *conf.Options) { c.UISearchDebounceMs = 500 }, "uiSearchDebounceMs", float64(500)),
+		Entry("uiCoverArtSize", func(c *conf.Options) { c.UICoverArtSize = 300 }, "uiCoverArtSize", float64(300)),
+		Entry("uiAppendRemixers", func(c *conf.Options) { c.UIAppendRemixers = false }, "uiAppendRemixers", false),
+		Entry("enableCoverAnimation", func(c *conf.Options) { c.EnableCoverAnimation = true }, "enableCoverAnimation", true),
+		Entry("pidAlbum", func(c *conf.Options) { c.PID.Album = "folder" }, "pidAlbum", "folder"),
+		Entry("pidTrack", func(c *conf.Options) { c.PID.Track = "title" }, "pidTrack", "title"),
+		Entry("enableNowPlaying", func(c *conf.Options) { c.EnableNowPlaying = true }, "enableNowPlaying", true),
+		Entry("gaTrackingId", func(c *conf.Options) { c.GATrackingID = "UA-12345" }, "gaTrackingId", "UA-12345"),
+		Entry("defaultDownloadableShare", func(c *conf.Options) { c.DefaultDownloadableShare = true }, "defaultDownloadableShare", true),
+		Entry("devSidebarPlaylists", func(c *conf.Options) { c.DevSidebarPlaylists = true }, "devSidebarPlaylists", true),
+		Entry("lastFMEnabled", func(c *conf.Options) { c.LastFM.Enabled = true }, "lastFMEnabled", true),
+		Entry("devShowArtistPage", func(c *conf.Options) { c.DevShowArtistPage = true }, "devShowArtistPage", true),
+		Entry("devUIShowConfig", func(c *conf.Options) { c.DevUIShowConfig = true }, "devUIShowConfig", true),
+		Entry("listenBrainzEnabled", func(c *conf.Options) { c.ListenBrainz.Enabled = true }, "listenBrainzEnabled", true),
+		Entry("enableReplayGain", func(c *conf.Options) { c.EnableReplayGain = true }, "enableReplayGain", true),
+		Entry("enableQuickConnect", func(c *conf.Options) { c.Jellyfin.Enabled = true; c.Jellyfin.QuickConnect = true }, "enableQuickConnect", true),
+		Entry("enableQuickConnect without the Jellyfin API", func(c *conf.Options) { c.Jellyfin.Enabled = false; c.Jellyfin.QuickConnect = true }, "enableQuickConnect", false),
+		Entry("enableExternalServices", func(c *conf.Options) { c.EnableExternalServices = true }, "enableExternalServices", true),
+		Entry("devActivityPanel", func(c *conf.Options) { c.DevActivityPanel = true }, "devActivityPanel", true),
+		Entry("shareURL", func(c *conf.Options) { c.ShareURL = "https://share.example.com" }, "shareURL", "https://share.example.com"),
+		Entry("enableInspect", func(c *conf.Options) { c.Inspect.Enabled = true }, "enableInspect", true),
+		Entry("defaultDownsamplingFormat", func(c *conf.Options) { c.DefaultDownsamplingFormat = "mp3" }, "defaultDownsamplingFormat", "mp3"),
+		Entry("enableUserEditing", func(c *conf.Options) { c.EnableUserEditing = false }, "enableUserEditing", false),
+		Entry("enableSharing", func(c *conf.Options) { c.EnableSharing = true }, "enableSharing", true),
+		Entry("devNewEventStream", func(c *conf.Options) { c.DevNewEventStream = true }, "devNewEventStream", true),
+		Entry("extAuthLogoutURL", func(c *conf.Options) { c.ExtAuth.LogoutURL = "https://auth.example.com/logout" }, "extAuthLogoutURL", "https://auth.example.com/logout"),
+		Entry("playbackReportIntervalMs", func(c *conf.Options) { c.UIPlaybackReportInterval = 30 * time.Second }, "playbackReportIntervalMs", float64(30000)),
+	)
+
+	It("sanitizes entity-encoded welcomeMessage as html", func() {
+		conf.Update(func(c *conf.Options) {
+			c.UIWelcomeMessage = `&lt;img src=x onerror=alert(1)&gt;&lt;b&gt;Hello&lt;/b&gt;`
+		})
+		r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+		w := httptest.NewRecorder()
+
+		serveIndex(ds, fs, nil)(w, r)
+
+		config := extractAppConfig(w.Body.String())
+		Expect(config).To(HaveKey("welcomeMessage"))
+		Expect(config["welcomeMessage"]).To(Equal(`<img src="x"><b>Hello</b>`))
+	})
+
+	DescribeTable("sets other UI configuration values",
+		func(configKey string, expectedValueFunc func() any) {
+			r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+			w := httptest.NewRecorder()
+
+			serveIndex(ds, fs, nil)(w, r)
+
+			config := extractAppConfig(w.Body.String())
+			Expect(config).To(HaveKeyWithValue(configKey, expectedValueFunc()))
+		},
+		Entry("version", "version", func() any { return consts.Version }),
+		Entry("variousArtistsId", "variousArtistsId", func() any { return consts.VariousArtistsID }),
+		Entry("losslessFormats", "losslessFormats", func() any {
+			return strings.ToUpper(strings.Join(mime.LosslessFormats, ","))
+		}),
+		Entry("separator", "separator", func() any { return string(os.PathSeparator) }),
+	)
+
+	Describe("loginBackgroundURL", func() {
+		Context("empty BaseURL", func() {
+			BeforeEach(func() {
+				conf.Update(func(c *conf.Options) { c.BasePath = "/" })
+			})
+			When("it is the default URL", func() {
+				It("points to the default URL", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = consts.DefaultUILoginBackgroundURL })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", consts.DefaultUILoginBackgroundURL))
+				})
+			})
+			When("it is the default offline URL", func() {
+				It("points to the offline URL", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = consts.DefaultUILoginBackgroundURLOffline })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", consts.DefaultUILoginBackgroundURLOffline))
+				})
+			})
+			When("it is a custom URL", func() {
+				It("points to the offline URL", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = "https://example.com/images/1.jpg" })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", "https://example.com/images/1.jpg"))
+				})
+			})
+		})
+		Context("with a BaseURL", func() {
+			BeforeEach(func() {
+				conf.Update(func(c *conf.Options) { c.BasePath = "/music" })
+			})
+			When("it is the default URL", func() {
+				It("points to the default URL with BaseURL prefix", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = consts.DefaultUILoginBackgroundURL })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", "/music"+consts.DefaultUILoginBackgroundURL))
+				})
+			})
+			When("it is the default offline URL", func() {
+				It("points to the offline URL", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = consts.DefaultUILoginBackgroundURLOffline })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", consts.DefaultUILoginBackgroundURLOffline))
+				})
+			})
+			When("it is a custom URL", func() {
+				It("points to the offline URL", func() {
+					conf.Update(func(c *conf.Options) { c.UILoginBackgroundURL = "https://example.com/images/1.jpg" })
+					r := httptest.NewRequest(http.MethodGet, "/index.html", nil)
+					w := httptest.NewRecorder()
+
+					serveIndex(ds, fs, nil)(w, r)
+
+					config := extractAppConfig(w.Body.String())
+					Expect(config).To(HaveKeyWithValue("loginBackgroundURL", "https://example.com/images/1.jpg"))
+				})
+			})
+		})
+	})
+})
+
+var _ = Describe("addShareData", func() {
+	var (
+		r         *http.Request
+		data      map[string]any
+		shareInfo *model.Share
+	)
+
+	BeforeEach(func() {
+		data = make(map[string]any)
+		r = httptest.NewRequest(http.MethodGet, "/", nil)
+	})
+
+	Context("when shareInfo is nil or has an empty ID", func() {
+		It("should not modify data", func() {
+			addShareData(r, data, nil)
+			Expect(data).To(BeEmpty())
+
+			shareInfo = &model.Share{}
+			addShareData(r, data, shareInfo)
+			Expect(data).To(BeEmpty())
+		})
+	})
+
+	Context("when shareInfo is not nil and has a non-empty ID", func() {
+		BeforeEach(func() {
+			shareInfo = &model.Share{
+				ID:           "testID",
+				Description:  "Test description",
+				Downloadable: true,
+				Tracks: []model.MediaFile{
+					{
+						ID:        "track1",
+						Title:     "Track 1",
+						Artist:    "Artist 1",
+						Album:     "Album 1",
+						Duration:  100,
+						UpdatedAt: time.Date(2023, time.Month(3), 27, 0, 0, 0, 0, time.UTC),
+					},
+					{
+						ID:        "track2",
+						Title:     "Track 2",
+						Artist:    "Artist 2",
+						Album:     "Album 2",
+						Duration:  200,
+						UpdatedAt: time.Date(2023, time.Month(3), 26, 0, 0, 0, 0, time.UTC),
+					},
+				},
+				Contents: "Test contents",
+				URL:      "https://example.com/share/testID",
+				ImageURL: "https://example.com/share/testID/image",
+			}
+		})
+
+		It("should populate data with shareInfo data", func() {
+			addShareData(r, data, shareInfo)
+
+			Expect(data["ShareDescription"]).To(Equal(shareInfo.Description))
+			Expect(data["ShareURL"]).To(Equal(shareInfo.URL))
+			Expect(data["ShareImageURL"]).To(Equal(shareInfo.ImageURL))
+
+			var shareData shareData
+			err := json.Unmarshal([]byte(data["ShareInfo"].(string)), &shareData)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(shareData.ID).To(Equal(shareInfo.ID))
+			Expect(shareData.Description).To(Equal(shareInfo.Description))
+			Expect(shareData.Downloadable).To(Equal(shareInfo.Downloadable))
+
+			Expect(shareData.Tracks).To(HaveLen(len(shareInfo.Tracks)))
+			for i, track := range shareData.Tracks {
+				Expect(track.ID).To(Equal(shareInfo.Tracks[i].ID))
+				Expect(track.Title).To(Equal(shareInfo.Tracks[i].Title))
+				Expect(track.Artist).To(Equal(shareInfo.Tracks[i].Artist))
+				Expect(track.Album).To(Equal(shareInfo.Tracks[i].Album))
+				Expect(track.Duration).To(Equal(shareInfo.Tracks[i].Duration))
+				Expect(track.UpdatedAt).To(Equal(shareInfo.Tracks[i].UpdatedAt))
+			}
+		})
+
+		Context("when shareInfo has an empty description", func() {
+			BeforeEach(func() {
+				shareInfo.Description = ""
+			})
+
+			It("should use shareInfo.Contents as ShareDescription", func() {
+				addShareData(r, data, shareInfo)
+				Expect(data["ShareDescription"]).To(Equal(shareInfo.Contents))
+			})
+		})
+	})
+})
+
+var appConfigRegex = regexp.MustCompile(`(?m)window.__APP_CONFIG__=(.*);</script>`)
+
+func extractAppConfig(body string) map[string]any {
+	GinkgoHelper()
+	config := make(map[string]any)
+	match := appConfigRegex.FindStringSubmatch(body)
+	if match == nil {
+		return config
+	}
+	str, err := strconv.Unquote(match[1])
+	Expect(err).ToNot(HaveOccurred(), match[1])
+	Expect(json.Unmarshal([]byte(str), &config)).To(Succeed())
+	return config
+}

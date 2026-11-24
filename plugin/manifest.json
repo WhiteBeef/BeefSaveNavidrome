@@ -1,0 +1,64 @@
+{
+  "name": "BeefSave Music",
+  "author": "WhiteBeef",
+  "version": "1.0.0",
+  "description": "Search and download music through BeefSaveBot",
+  "website": "https://github.com/WhiteBeef/BeefSaveNavidrome",
+  "config": {
+    "schema": {
+      "type": "object",
+      "required": ["baseUrl", "apiKey"],
+      "properties": {
+        "baseUrl": {
+          "type": "string",
+          "title": "BeefSaveBot API URL",
+          "description": "For example: http://192.168.1.10:8090"
+        },
+        "apiKey": {
+          "type": "string",
+          "title": "API key",
+          "description": "API_KEY from the BeefSaveBot .env file",
+          "minLength": 1
+        },
+        "libraryId": {
+          "type": "integer",
+          "title": "Target library ID",
+          "default": 1,
+          "minimum": 1
+        },
+        "directory": {
+          "type": "string",
+          "title": "Target directory",
+          "description": "Relative to the selected library",
+          "default": "BeefSave"
+        },
+        "quality": {
+          "type": "string",
+          "title": "MP3 quality",
+          "enum": ["LOW", "MEDIUM", "HIGH"],
+          "default": "MEDIUM"
+        }
+      }
+    },
+    "uiSchema": {
+      "type": "VerticalLayout",
+      "elements": [
+        {"type": "Control", "scope": "#/properties/baseUrl"},
+        {"type": "Control", "scope": "#/properties/apiKey"},
+        {"type": "Control", "scope": "#/properties/libraryId"},
+        {"type": "Control", "scope": "#/properties/directory"},
+        {"type": "Control", "scope": "#/properties/quality"}
+      ]
+    }
+  },
+  "permissions": {
+    "http": {
+      "reason": "Search and download music through the configured BeefSaveBot API",
+      "requiredHosts": ["*"]
+    },
+    "library": {
+      "reason": "Save downloaded MP3 files in the selected music library",
+      "filesystem": true
+    }
+  }
+}
