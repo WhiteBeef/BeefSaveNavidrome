@@ -13,7 +13,13 @@ import {
   MdSupervisorAccount,
 } from 'react-icons/md'
 import { useSelector } from 'react-redux'
-import { makeStyles, MenuItem, ListItemIcon, Divider } from '@material-ui/core'
+import {
+  makeStyles,
+  MenuItem,
+  ListItemIcon,
+  Divider,
+  Typography,
+} from '@material-ui/core'
 import ViewListIcon from '@material-ui/icons/ViewList'
 import { Dialogs } from '../dialogs/Dialogs'
 import { AboutDialog, QuickConnectDialog } from '../dialogs'
@@ -32,6 +38,14 @@ const useStyles = makeStyles(
       color: theme.palette.text.primary,
     },
     icon: { minWidth: theme.spacing(5) },
+    title: {
+      flex: 1,
+      color: 'inherit',
+      textDecoration: 'none',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+    },
   }),
   {
     name: 'NDAppBar',
@@ -158,8 +172,19 @@ const CustomUserMenu = ({ onClick, ...rest }) => {
   )
 }
 
-const AppBar = (props) => (
-  <RAAppBar {...props} container={Fragment} userMenu={<CustomUserMenu />} />
-)
+const AppBar = (props) => {
+  const classes = useStyles()
+  return (
+    <RAAppBar {...props} container={Fragment} userMenu={<CustomUserMenu />}>
+      <Typography
+        variant="h6"
+        component="a"
+        href="#/"
+        className={classes.title}
+        id="react-admin-title"
+      />
+    </RAAppBar>
+  )
+}
 
 export default AppBar

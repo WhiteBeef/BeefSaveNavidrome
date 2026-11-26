@@ -13,14 +13,12 @@ import PlayArrowIcon from '@material-ui/icons/PlayArrow'
 import ShuffleIcon from '@material-ui/icons/Shuffle'
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined'
 import { RiPlayListAddFill, RiPlayList2Fill } from 'react-icons/ri'
-import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd'
 import ShareIcon from '@material-ui/icons/Share'
 import {
   playNext,
   addTracks,
   playTracks,
   shuffleTracks,
-  openAddToPlaylist,
   openDownloadMenu,
   DOWNLOAD_MENU_ALBUM,
   openShareMenu,
@@ -72,11 +70,6 @@ const AlbumActions = ({
     dispatch(shuffleTracks(data, ids))
   }, [dispatch, data, ids])
 
-  const handleAddToPlaylist = React.useCallback(() => {
-    const selectedIds = ids.filter((id) => !data[id].missing)
-    dispatch(openAddToPlaylist({ selectedIds }))
-  }, [dispatch, data, ids])
-
   const handleShare = React.useCallback(() => {
     dispatch(openShareMenu([record.id], 'album', record.name))
   }, [dispatch, record])
@@ -112,12 +105,6 @@ const AlbumActions = ({
             label={translate('resources.album.actions.addToQueue')}
           >
             <RiPlayListAddFill />
-          </AlbumButton>
-          <AlbumButton
-            onClick={handleAddToPlaylist}
-            label={translate('resources.album.actions.addToPlaylist')}
-          >
-            <PlaylistAddIcon />
           </AlbumButton>
           {config.enableSharing && (
             <AlbumButton

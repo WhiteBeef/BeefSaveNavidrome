@@ -8,7 +8,7 @@ import ListItemText from '@material-ui/core/ListItemText'
 import { makeStyles } from '@material-ui/core/styles'
 import { sanitizeListRestProps } from 'react-admin'
 import { DurationField, SongContextMenu, RatingField } from './index'
-import { setTrack } from '../actions'
+import { playTracks } from '../actions'
 import { useDispatch } from 'react-redux'
 import config from '../config'
 
@@ -71,7 +71,10 @@ export const SongSimpleList = ({
         {ids.map(
           (id) =>
             data[id] && (
-              <span key={id} onClick={() => dispatch(setTrack(data[id]))}>
+              <span
+                key={id}
+                onClick={() => dispatch(playTracks(data, ids, id))}
+              >
                 <ListItem className={classes.listItem} button={true}>
                   <ListItemText
                     primary={

@@ -17,20 +17,18 @@ import user from './user'
 import song from './song'
 import album from './album'
 import artist from './artist'
-import playlist from './playlist'
-import radio from './radio'
+import Home from './home/Home'
 import share from './share'
 import library from './library'
 import plugin from './plugin'
 import { Player } from './audioplayer'
+import { AudioPlayerProvider } from './audioplayer/AudioPlayerContext'
 import customRoutes from './routes'
 import {
   libraryReducer,
   themeReducer,
-  addToPlaylistDialogReducer,
   expandInfoDialogReducer,
   listenBrainzTokenDialogReducer,
-  saveQueueDialogReducer,
   playerReducer,
   albumViewReducer,
   activityReducer,
@@ -70,11 +68,9 @@ const adminStore = createAdminStore({
     player: playerReducer,
     albumView: albumViewReducer,
     theme: themeReducer,
-    addToPlaylistDialog: addToPlaylistDialogReducer,
     downloadMenuDialog: downloadMenuDialogReducer,
     expandInfoDialog: expandInfoDialogReducer,
     listenBrainzTokenDialog: listenBrainzTokenDialogReducer,
-    saveQueueDialog: saveQueueDialogReducer,
     shareDialog: shareDialogReducer,
     activity: activityReducer,
     settings: settingsReducer,
@@ -111,79 +107,80 @@ const Admin = (props) => {
   useChangeThemeColor()
   /* eslint-disable react/jsx-key */
   return (
-    <RAAdmin
-      disableTelemetry
-      dataProvider={dataProvider}
-      authProvider={authProvider}
-      i18nProvider={i18nProvider}
-      customRoutes={customRoutes}
-      history={history}
-      layout={Layout}
-      loginPage={Login}
-      logoutButton={Logout}
-      {...props}
-    >
-      {(permissions) => [
-        <Resource name="album" {...album} options={{ subMenu: 'albumList' }} />,
-        <Resource name="artist" {...artist} />,
-        <Resource name="song" {...song} />,
-        <Resource
-          name="radio"
-          {...(permissions === 'admin' ? radio.admin : radio.all)}
-        />,
-        config.enableSharing && <Resource name="share" {...share} />,
-        <Resource
-          name="playlist"
-          {...playlist}
-          options={{ subMenu: 'playlist' }}
-        />,
-        <Resource name="user" {...user} options={{ subMenu: 'settings' }} />,
-        <Resource
-          name="player"
-          {...player}
-          options={{ subMenu: 'settings', label: 'resources.player.menuName' }}
-        />,
-        permissions === 'admin' ? (
+    <AudioPlayerProvider>
+      <RAAdmin
+        disableTelemetry
+        dataProvider={dataProvider}
+        authProvider={authProvider}
+        i18nProvider={i18nProvider}
+        customRoutes={customRoutes}
+        history={history}
+        layout={Layout}
+        dashboard={Home}
+        loginPage={Login}
+        logoutButton={Logout}
+        {...props}
+      >
+        {(permissions) => [
           <Resource
-            name="transcoding"
-            {...transcoding}
-            options={{ subMenu: 'settings' }}
-          />
-        ) : (
-          <Resource name="transcoding" />
-        ),
-        permissions === 'admin' ? (
+            name="album"
+            {...album}
+            options={{ subMenu: 'albumList' }}
+          />,
+          <Resource name="artist" {...artist} />,
+          <Resource name="song" {...song} />,
+          config.enableSharing && <Resource name="share" {...share} />,
+          <Resource name="user" {...user} options={{ subMenu: 'settings' }} />,
           <Resource
-            name="library"
-            {...library}
-            options={{ subMenu: 'settings' }}
-          />
-        ) : null,
-        permissions === 'admin' ? (
-          <Resource
-            name="missing"
-            {...missing}
-            options={{ subMenu: 'settings' }}
-          />
-        ) : null,
-        permissions === 'admin' && config.pluginsEnabled ? (
-          <Resource
-            name="plugin"
-            {...plugin}
-            options={{ subMenu: 'settings' }}
-          />
-        ) : null,
+            name="player"
+            {...player}
+            options={{
+              subMenu: 'settings',
+              label: 'resources.player.menuName',
+            }}
+          />,
+          permissions === 'admin' ? (
+            <Resource
+              name="transcoding"
+              {...transcoding}
+              options={{ subMenu: 'settings' }}
+            />
+          ) : (
+            <Resource name="transcoding" />
+          ),
+          permissions === 'admin' ? (
+            <Resource
+              name="library"
+              {...library}
+              options={{ subMenu: 'settings' }}
+            />
+          ) : null,
+          permissions === 'admin' ? (
+            <Resource
+              name="missing"
+              {...missing}
+              options={{ subMenu: 'settings' }}
+            />
+          ) : null,
+          permissions === 'admin' && config.pluginsEnabled ? (
+            <Resource
+              name="plugin"
+              {...plugin}
+              options={{ subMenu: 'settings' }}
+            />
+          ) : null,
 
-        <Resource name="translation" />,
-        <Resource name="genre" />,
-        <Resource name="tag" />,
-        <Resource name="playlistTrack" />,
-        <Resource name="keepalive" />,
-        <Resource name="insights" />,
-        <Resource name="config" />,
-        <Player />,
-      ]}
-    </RAAdmin>
+          <Resource name="translation" />,
+          <Resource name="genre" />,
+          <Resource name="tag" />,
+          <Resource name="playlistTrack" />,
+          <Resource name="keepalive" />,
+          <Resource name="insights" />,
+          <Resource name="config" />,
+          <Player />,
+        ]}
+      </RAAdmin>
+    </AudioPlayerProvider>
   )
   /* eslint-enable react/jsx-key */
 }

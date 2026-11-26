@@ -12,7 +12,12 @@ let store
 const mocks = vi.hoisted(() => ({ resources: [] }))
 
 vi.mock('react-admin', () => ({
-  AppBar: ({ userMenu }) => <div data-testid="appbar">{userMenu}</div>,
+  AppBar: ({ userMenu, children }) => (
+    <div data-testid="appbar">
+      {children}
+      {userMenu}
+    </div>
+  ),
   MenuItemLink: ({ primaryText }) => <div>{primaryText}</div>,
   useTranslate: () => (x) => x,
   usePermissions: () => ({ permissions: 'admin' }),
@@ -48,6 +53,15 @@ describe('<AppBar />', () => {
     store = createStore(combineReducers({ activity: activityReducer }), {
       activity: { nowPlayingCount: 0 },
     })
+  })
+
+  it('links the section title to the home page', () => {
+    render(
+      <Provider store={store}>
+        <AppBar />
+      </Provider>,
+    )
+    expect(screen.getByRole('link')).toHaveAttribute('href', '#/')
   })
 
   it('renders NowPlayingPanel when enabled', () => {

@@ -271,9 +271,10 @@ SongDatagridRow.defaultProps = {
   onClickSubset: () => {},
 }
 
-const SongDatagridBody = ({
+export const SongDatagridBody = ({
   contextAlwaysVisible,
   showDiscSubtitles,
+  playAllOnClick,
   ...rest
 }) => {
   const dispatch = useDispatch()
@@ -321,9 +322,14 @@ const SongDatagridBody = ({
     return set
   }, [ids, data, showDiscSubtitles])
 
+  const rowClick = playAllOnClick
+    ? (id) => dispatch(playTracks(data, ids, id))
+    : rest.rowClick
+
   return (
     <PureDatagridBody
       {...rest}
+      rowClick={rowClick}
       row={
         <SongDatagridRow
           firstTracksOfDiscs={firstTracksOfDiscs}
@@ -338,6 +344,7 @@ const SongDatagridBody = ({
 export const SongDatagrid = ({
   contextAlwaysVisible,
   showDiscSubtitles,
+  playAllOnClick,
   ...rest
 }) => {
   const classes = useStyles()
@@ -350,6 +357,7 @@ export const SongDatagrid = ({
         <SongDatagridBody
           contextAlwaysVisible={contextAlwaysVisible}
           showDiscSubtitles={showDiscSubtitles}
+          playAllOnClick={playAllOnClick}
         />
       }
     />
@@ -359,5 +367,6 @@ export const SongDatagrid = ({
 SongDatagrid.propTypes = {
   contextAlwaysVisible: PropTypes.bool,
   showDiscSubtitles: PropTypes.bool,
+  playAllOnClick: PropTypes.bool,
   classes: PropTypes.object,
 }

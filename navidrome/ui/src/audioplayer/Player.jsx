@@ -11,6 +11,7 @@ import {
 } from 'react-admin'
 import ReactGA from 'react-ga'
 import { GlobalHotKeys } from 'react-hotkeys'
+import { useLocation } from 'react-router-dom'
 import ReactJkMusicPlayer from 'navidrome-music-player'
 import 'navidrome-music-player/assets/index.css'
 import useCurrentTheme from '../themes/useCurrentTheme'
@@ -34,6 +35,8 @@ import { keyMap } from '../hotkeys'
 import keyHandlers from './keyHandlers'
 import { calculateGain } from '../utils/calculateReplayGain'
 import { detectBrowserProfile, decisionService } from '../transcode'
+import { useAudioPlayer } from './audioPlayerContext'
+import { PlaybackControls } from './PlaybackControls'
 
 const Player = () => {
   const theme = useCurrentTheme()
@@ -47,7 +50,8 @@ const Player = () => {
   const lastPositionMsRef = useRef(0)
   const currentTrackIdRef = useRef(null)
   const stoppedRef = useRef(false)
-  const [audioInstance, setAudioInstance] = useState(null)
+  const { audioInstance, setAudioInstance } = useAudioPlayer()
+  const location = useLocation()
   const isDesktop = useMediaQuery('(min-width:810px)')
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -126,10 +130,11 @@ const Player = () => {
   }, [playerState.queue, playerState.savedPlayIndex])
 
   const visible = authenticated && playerState.queue.length > 0
+  const isHome = location.pathname === '/'
   const isRadio = playerState.current?.isRadio || false
   const classes = useStyle({
     isRadio,
-    visible,
+    visible: visible && !isHome,
     enableCoverAnimation: config.enableCoverAnimation,
   })
   const showNotifications = useSelector(
@@ -210,7 +215,7 @@ const Player = () => {
       mode: 'full',
       loadAudioErrorPlayNext: false,
       clearPriorAudioLists: false,
-      showDestroy: true,
+      showDestroy: false,
       showDownload: false,
       showLyric: true,
       showReload: false,
@@ -252,12 +257,18 @@ const Player = () => {
       // Off for the queue restored at startup, so it does not start by itself
       autoPlayInitLoadPlayList: playerState.autoPlay !== false,
       extendsContent: (
-        <PlayerToolbar id={current.trackId} isRadio={current.isRadio} />
+        <div className="custom-player-controls">
+          <PlaybackControls
+            audioInstance={audioInstance}
+            paused={current.paused ?? true}
+          />
+          <PlayerToolbar id={current.trackId} isRadio={current.isRadio} />
+        </div>
       ),
       defaultVolume: isMobilePlayer ? 1 : playerState.volume,
       showMediaSession: !current.isRadio,
     }
-  }, [playerState, defaultOptions, isMobilePlayer])
+  }, [playerState, defaultOptions, isMobilePlayer, audioInstance])
 
   const onAudioListsChange = useCallback(
     (_, audioLists, audioInfo) => dispatch(syncQueue(audioInfo, audioLists)),

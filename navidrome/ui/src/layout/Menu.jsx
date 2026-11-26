@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Divider, makeStyles } from '@material-ui/core'
+import { makeStyles } from '@material-ui/core'
 import clsx from 'clsx'
 import { useTranslate, MenuItemLink, getResources } from 'react-admin'
 import ViewListIcon from '@material-ui/icons/ViewList'
+import HomeIcon from '@material-ui/icons/Home'
 import AlbumIcon from '@material-ui/icons/Album'
 import SubMenu from './SubMenu'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import { humanize, pluralize } from 'inflection'
 import albumLists from '../album/albumLists'
-import PlaylistsSubMenu from './PlaylistsSubMenu'
 import LibrarySelector from '../common/LibrarySelector'
 import config from '../config'
 
@@ -21,6 +21,7 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    padding: theme.spacing(0, 1),
     paddingBottom: (props) => (props.addPadding ? '80px' : '20px'),
   },
   open: {
@@ -28,9 +29,11 @@ const useStyles = makeStyles((theme) => ({
   },
   closed: {
     width: 55,
+    padding: 0,
   },
   active: {
-    color: theme.palette.text.primary,
+    color: theme.palette.primary.main,
+    background: theme.palette.action.selected,
     fontWeight: 'bold',
   },
 }))
@@ -53,17 +56,7 @@ const Menu = ({ dense = false }) => {
   const queue = useSelector((state) => state.player?.queue)
   const classes = useStyles({ addPadding: queue.length > 0 })
   const resources = useSelector(getResources)
-
-  // TODO State is not persisted in mobile when you close the sidebar menu. Move to redux?
-  const [state, setState] = useState({
-    menuAlbumList: true,
-    menuPlaylists: true,
-    menuSharedPlaylists: true,
-  })
-
-  const handleToggle = (menu) => {
-    setState((state) => ({ ...state, [menu]: !state[menu] }))
-  }
+  const [isAlbumListOpen, setIsAlbumListOpen] = useState(false)
 
   const renderResourceMenuItemLink = (resource) => (
     <MenuItemLink
@@ -114,9 +107,18 @@ const Menu = ({ dense = false }) => {
       })}
     >
       {open && <LibrarySelector />}
+      <MenuItemLink
+        to="/"
+        exact
+        activeClassName={classes.active}
+        primaryText={translate('menu.home', { _: 'Home' })}
+        leftIcon={<HomeIcon />}
+        sidebarIsOpen={open}
+        dense={dense}
+      />
       <SubMenu
-        handleToggle={() => handleToggle('menuAlbumList')}
-        isOpen={state.menuAlbumList}
+        handleToggle={() => setIsAlbumListOpen((value) => !value)}
+        isOpen={isAlbumListOpen}
         sidebarIsOpen={open}
         name="menu.albumList"
         icon={<AlbumIcon />}
@@ -137,19 +139,6 @@ const Menu = ({ dense = false }) => {
         />
       )}
       {resources.filter(subItems(undefined)).map(renderResourceMenuItemLink)}
-      {config.devSidebarPlaylists && open ? (
-        <>
-          <Divider />
-          <PlaylistsSubMenu
-            state={state}
-            setState={setState}
-            sidebarIsOpen={open}
-            dense={dense}
-          />
-        </>
-      ) : (
-        resources.filter(subItems('playlist')).map(renderResourceMenuItemLink)
-      )}
     </div>
   )
 }

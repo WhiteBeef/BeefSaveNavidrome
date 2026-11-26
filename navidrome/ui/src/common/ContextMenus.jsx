@@ -19,7 +19,6 @@ import {
   addTracks,
   playTracks,
   shuffleTracks,
-  openAddToPlaylist,
   openDownloadMenu,
   openExtendedInfoDialog,
   DOWNLOAD_MENU_ALBUM,
@@ -106,12 +105,6 @@ const ContextMenu = ({
       needData: true,
       label: translate('resources.album.actions.shuffle'),
       action: (data, ids) => dispatch(shuffleTracks(data, ids)),
-    },
-    addToPlaylist: {
-      enabled: true,
-      needData: true,
-      label: translate('resources.album.actions.addToPlaylist'),
-      action: (data, ids) => dispatch(openAddToPlaylist({ selectedIds: ids })),
     },
     ...(!hideShare && {
       share: {

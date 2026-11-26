@@ -15,7 +15,7 @@ const mockDispatch = vi.fn()
 vi.mock('react-redux', () => ({ useDispatch: () => mockDispatch }))
 
 vi.mock('../subsonic', () => ({
-  default: { getSimilarSongs2: vi.fn(), getTopSongs: vi.fn() },
+  default: { getTopSongs: vi.fn() },
 }))
 
 const { mockConfig, mockPermissions } = vi.hoisted(() => ({
@@ -82,14 +82,6 @@ describe('ArtistActions', () => {
       },
     }
 
-    subsonic.getSimilarSongs2.mockResolvedValue({
-      json: {
-        'subsonic-response': {
-          status: 'ok',
-          similarSongs2: { song: [songWithReplayGain] },
-        },
-      },
-    })
     subsonic.getTopSongs.mockResolvedValue({
       json: {
         'subsonic-response': {
@@ -113,34 +105,6 @@ describe('ArtistActions', () => {
         }),
       )
       expect(mockDispatch).toHaveBeenCalled()
-    })
-  })
-
-  describe('Radio action', () => {
-    it('starts radio when clicked', async () => {
-      renderArtistActions()
-      clickActionButton('radio')
-
-      await waitFor(() =>
-        expect(subsonic.getSimilarSongs2).toHaveBeenCalledWith('ar1', 100),
-      )
-      expect(mockDispatch).toHaveBeenCalled()
-    })
-
-    it('maps replaygain info', async () => {
-      renderArtistActions()
-      clickActionButton('radio')
-
-      await waitFor(() =>
-        expect(subsonic.getSimilarSongs2).toHaveBeenCalledWith('ar1', 100),
-      )
-      const action = mockDispatch.mock.calls[0][0]
-      expect(action.data.rec1).toMatchObject({
-        rgAlbumGain: -5,
-        rgAlbumPeak: 1,
-        rgTrackGain: -6,
-        rgTrackPeak: 0.8,
-      })
     })
   })
 

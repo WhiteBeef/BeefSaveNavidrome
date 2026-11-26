@@ -16,7 +16,6 @@ import {
   playNext,
   addTracks,
   setTrack,
-  openAddToPlaylist,
   openExtendedInfoDialog,
   openDownloadMenu,
   DOWNLOAD_MENU_SONG,
@@ -26,7 +25,6 @@ import { LoveButton } from './LoveButton'
 import config from '../config'
 import { playSimilar } from './playbackActions.js'
 import { formatBytes } from '../utils'
-import { useRedirect } from 'react-admin'
 
 const useStyles = makeStyles({
   noWrap: {
@@ -52,24 +50,14 @@ const MoreButton = ({ record, onClick, info }) => {
   )
 }
 
-export const SongContextMenu = ({
-  resource,
-  record,
-  showLove,
-  onAddToPlaylist,
-  className,
-}) => {
+export const SongContextMenu = ({ resource, record, showLove, className }) => {
   const classes = useStyles()
   const dispatch = useDispatch()
   const translate = useTranslate()
   const notify = useNotify()
   const dataProvider = useDataProvider()
   const [anchorEl, setAnchorEl] = useState(null)
-  const [playlistAnchorEl, setPlaylistAnchorEl] = useState(null)
-  const [playlists, setPlaylists] = useState([])
-  const [playlistsLoaded, setPlaylistsLoaded] = useState(false)
   const { permissions } = usePermissions()
-  const redirect = useRedirect()
 
   const options = {
     playNow: {
@@ -105,26 +93,6 @@ export const SongContextMenu = ({
         }
       },
     },
-    addToPlaylist: {
-      enabled: true,
-      label: translate('resources.song.actions.addToPlaylist'),
-      action: (record) =>
-        dispatch(
-          openAddToPlaylist({
-            selectedIds: [record.mediaFileId || record.id],
-            onSuccess: (id) => onAddToPlaylist(id),
-          }),
-        ),
-    },
-    showInPlaylist: {
-      enabled: true,
-      label:
-        translate('resources.song.actions.showInPlaylist') +
-        (playlists.length > 0 ? ' ►' : ''),
-      action: (record, e) => {
-        setPlaylistAnchorEl(e.currentTarget)
-      },
-    },
     share: {
       enabled: config.enableSharing,
       label: translate('ra.action.share'),
@@ -150,7 +118,7 @@ export const SongContextMenu = ({
         let fullRecord = record
         if (permissions === 'admin' && !record.missing) {
           try {
-            let id = record.mediaFileId ?? record.id
+            const id = record.mediaFileId ?? record.id
             const data = await dataProvider.inspect(id)
             fullRecord = { ...record, rawTags: data.data.rawTags }
           } catch (error) {
@@ -172,21 +140,6 @@ export const SongContextMenu = ({
 
   const handleClick = (e) => {
     setAnchorEl(e.currentTarget)
-    if (!playlistsLoaded) {
-      const id = record.mediaFileId || record.id
-      dataProvider
-        .getPlaylists(id)
-        .then((res) => {
-          setPlaylists(res.data)
-          setPlaylistsLoaded(true)
-        })
-        .catch((error) => {
-          // eslint-disable-next-line no-console
-          console.error('Failed to fetch playlists:', error)
-          setPlaylists([])
-          setPlaylistsLoaded(true)
-        })
-    }
     e.stopPropagation()
   }
 
@@ -198,39 +151,10 @@ export const SongContextMenu = ({
   const handleItemClick = (e) => {
     e.preventDefault()
     const key = e.target.getAttribute('value')
-    const action = options[key].action
-
-    if (key === 'showInPlaylist') {
-      // For showInPlaylist, we keep the main menu open and show submenu
-      action(record, e)
-    } else {
-      // For other actions, close the main menu
-      setAnchorEl(null)
-      action(record)
-    }
-    e.stopPropagation()
-  }
-
-  const handlePlaylistClose = (e) => {
-    setPlaylistAnchorEl(null)
-    if (e) {
-      e.stopPropagation()
-    }
-  }
-
-  const handleMainMenuClose = (e) => {
     setAnchorEl(null)
-    setPlaylistAnchorEl(null) // Close both menus
+    options[key].action(record)
     e.stopPropagation()
   }
-
-  const handlePlaylistClick = (id, e) => {
-    e.stopPropagation()
-    redirect(`/playlist/${id}/show`)
-    handlePlaylistClose()
-  }
-
-  const open = Boolean(anchorEl)
 
   if (!record) {
     return null
@@ -249,51 +173,17 @@ export const SongContextMenu = ({
       <Menu
         id={'menu' + record.id}
         anchorEl={anchorEl}
-        open={open}
-        onClose={handleMainMenuClose}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
       >
-        {Object.keys(options).map((key) => {
-          const showInPlaylistDisabled =
-            key === 'showInPlaylist' && !playlists.length
-          return (
+        {Object.keys(options).map(
+          (key) =>
             options[key].enabled && (
-              <MenuItem
-                value={key}
-                key={key}
-                onClick={
-                  showInPlaylistDisabled
-                    ? (e) => e.stopPropagation()
-                    : handleItemClick
-                }
-                disabled={showInPlaylistDisabled}
-                style={
-                  showInPlaylistDisabled ? { pointerEvents: 'auto' } : undefined
-                }
-              >
+              <MenuItem value={key} key={key} onClick={handleItemClick}>
                 {options[key].label}
               </MenuItem>
-            )
-          )
-        })}
-      </Menu>
-      <Menu
-        anchorEl={playlistAnchorEl}
-        open={Boolean(playlistAnchorEl)}
-        onClose={handlePlaylistClose}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-      >
-        {playlists.map((p) => (
-          <MenuItem key={p.id} onClick={(e) => handlePlaylistClick(p.id, e)}>
-            {p.name}
-          </MenuItem>
-        ))}
+            ),
+        )}
       </Menu>
     </span>
   )
@@ -302,12 +192,10 @@ export const SongContextMenu = ({
 SongContextMenu.propTypes = {
   resource: PropTypes.string.isRequired,
   record: PropTypes.object.isRequired,
-  onAddToPlaylist: PropTypes.func,
   showLove: PropTypes.bool,
 }
 
 SongContextMenu.defaultProps = {
-  onAddToPlaylist: () => {},
   record: {},
   resource: 'song',
   showLove: true,

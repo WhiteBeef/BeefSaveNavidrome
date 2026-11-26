@@ -667,7 +667,14 @@
     "download": "Download",
     "downloadSuccess": "Saved to %{path}. Run a library scan to see the track."
   },
+  "home": {
+    "title": "My wave",
+    "previous": "Previous",
+    "next": "Next",
+    "emptyDeck": "No tracks found in your library"
+  },
   "menu": {
+    "home": "Home",
     "musicDownload": "Download music",
     "library": "Library",
     "librarySelector": {

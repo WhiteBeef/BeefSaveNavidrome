@@ -4,6 +4,7 @@ import {
   PLAYER_SYNC_QUEUE,
   PLAYER_CURRENT,
   PLAYER_REFRESH_QUEUE,
+  addTracks,
   clearQueue,
   playNext,
   playTracks,
@@ -313,5 +314,23 @@ describe('playerReducer', () => {
       expect(refreshed.autoPlay).toBe(false)
       expect(playerReducer(refreshed, action()).autoPlay).toBe(true)
     })
+  })
+})
+
+describe('queue history', () => {
+  it('appends tracks without replacing or mutating previous songs', () => {
+    const previousTrack = { uuid: 'old', trackId: 'old', name: 'Previous' }
+    const previousQueue = [previousTrack]
+    const state = { queue: previousQueue, current: previousTrack, volume: 1 }
+
+    const result = playerReducer(
+      state,
+      addTracks({ next: { id: 'next', title: 'Next' } }),
+    )
+
+    expect(result.queue).toHaveLength(2)
+    expect(result.queue[0]).toBe(previousTrack)
+    expect(result.queue[1].trackId).toBe('next')
+    expect(previousQueue).toHaveLength(1)
   })
 })

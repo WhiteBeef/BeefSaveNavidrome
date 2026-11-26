@@ -2,13 +2,25 @@ import React from 'react'
 import { render, fireEvent, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createTheme, ThemeProvider } from '@material-ui/core/styles'
-import { DiscSubtitleRow } from './SongDatagrid'
+import { DiscSubtitleRow, SongDatagridBody } from './SongDatagrid'
 
 vi.mock('../subsonic', () => ({
   default: { getDiscCoverArtUrl: () => 'http://localhost/cover.jpg' },
 }))
 
-vi.mock('react-redux', () => ({ useDispatch: () => vi.fn() }))
+const mockDispatch = vi.fn()
+
+vi.mock('react-redux', () => ({ useDispatch: () => mockDispatch }))
+
+vi.mock('react-admin', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    PureDatagridBody: ({ rowClick }) => (
+      <button data-testid="song-row" onClick={() => rowClick('second')} />
+    ),
+  }
+})
 
 vi.mock('../common', () => ({ AlbumContextMenu: () => null }))
 
@@ -70,5 +82,27 @@ describe('DiscSubtitleRow', () => {
     openLightbox()
     fireEvent.click(document.querySelector('.ril__inner'))
     expect(onClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('SongDatagridBody', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('plays all rows starting from the clicked song', () => {
+    const data = {
+      first: { id: 'first', title: 'First' },
+      second: { id: 'second', title: 'Second' },
+      third: { id: 'third', title: 'Third' },
+    }
+    const ids = Object.keys(data)
+
+    render(<SongDatagridBody data={data} ids={ids} playAllOnClick />)
+    fireEvent.click(screen.getByTestId('song-row'))
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'PLAYER_PLAY_TRACKS',
+      id: 'second',
+      data,
+    })
   })
 })

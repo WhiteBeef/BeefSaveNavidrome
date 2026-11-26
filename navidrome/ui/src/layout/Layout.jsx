@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Layout as RALayout, toggleSidebar } from 'react-admin'
+import { useLocation } from 'react-router-dom'
 import { makeStyles } from '@material-ui/core/styles'
 import { HotKeys } from 'react-hotkeys'
 import Menu from './Menu'
@@ -16,7 +17,10 @@ const useStyles = makeStyles({
 const Layout = (props) => {
   const theme = useCurrentTheme()
   const queue = useSelector((state) => state.player?.queue)
-  const classes = useStyles({ addPadding: queue.length > 0 })
+  const location = useLocation()
+  const classes = useStyles({
+    addPadding: queue.length > 0 && location.pathname !== '/',
+  })
   const dispatch = useDispatch()
   useSearchRefocus()
 

@@ -24,8 +24,6 @@ describe('defaultViews', () => {
       expect.arrayContaining([
         { id: 'artist', name: 'resources.artist.name:2' },
         { id: 'song', name: 'resources.song.name:2' },
-        { id: 'playlist', name: 'resources.playlist.name:2' },
-        { id: 'radio', name: 'resources.radio.name:2' },
       ]),
     )
   })
@@ -33,8 +31,8 @@ describe('defaultViews', () => {
   it('identifies resource-backed default views', () => {
     expect(isResourceDefaultView('artist')).toBe(true)
     expect(isResourceDefaultView('song')).toBe(true)
-    expect(isResourceDefaultView('playlist')).toBe(true)
-    expect(isResourceDefaultView('radio')).toBe(true)
+    expect(isResourceDefaultView('playlist')).toBe(false)
+    expect(isResourceDefaultView('radio')).toBe(false)
     expect(isResourceDefaultView('recentlyAdded')).toBe(false)
   })
 
@@ -43,8 +41,8 @@ describe('defaultViews', () => {
   })
 
   it('returns the stored default view', () => {
-    localStorage.setItem('defaultView', 'playlist')
+    localStorage.setItem('defaultView', 'song')
 
-    expect(getStoredDefaultView()).toBe('playlist')
+    expect(getStoredDefaultView()).toBe('song')
   })
 })

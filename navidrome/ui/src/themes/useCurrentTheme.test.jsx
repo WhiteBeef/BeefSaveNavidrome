@@ -137,8 +137,8 @@ describe('useCurrentTheme', () => {
           </Provider>
         ),
       })
-      // Dark theme uses MUI default dark background
-      expect(document.body.style.backgroundColor).toBe('rgb(48, 48, 48)')
+      // Dark theme uses the custom black background
+      expect(document.body.style.backgroundColor).toBe('rgb(5, 8, 7)')
     })
     it('sets body background for light theme', () => {
       renderHook(() => useCurrentTheme(), {

@@ -15,9 +15,7 @@ import ShuffleIcon from '@material-ui/icons/Shuffle'
 import PlayArrowIcon from '@material-ui/icons/PlayArrow'
 import ShareIcon from '@material-ui/icons/Share'
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined'
-import { IoIosRadio } from 'react-icons/io'
 import { playShuffle, playTopSongs } from './actions.js'
-import { playSimilar } from '../common/playbackActions.js'
 import {
   openShareMenu,
   openDownloadMenu,
@@ -49,11 +47,6 @@ const useStyles = makeStyles((theme) => ({
       '& .MuiButton-startIcon': {
         marginRight: '4px',
       },
-    },
-  },
-  radioIcon: {
-    [theme.breakpoints.down('xs')]: {
-      fontSize: '1.5rem',
     },
   },
 }))
@@ -103,19 +96,6 @@ const ArtistActions = ({ className, record, ...rest }) => {
     }
   }, [dataProvider, dispatch, record, notify])
 
-  const handleRadio = React.useCallback(async () => {
-    setLoadingAction('radio')
-    try {
-      await playSimilar(dispatch, notify, record.id)
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Error starting radio for artist:', e)
-      notify('ra.page.error', 'warning')
-    } finally {
-      setLoadingAction(null)
-    }
-  }, [dispatch, notify, record])
-
   const handleShare = React.useCallback(() => {
     dispatch(openShareMenu([record.id], 'artist', record.name))
   }, [dispatch, record])
@@ -146,15 +126,6 @@ const ArtistActions = ({ className, record, ...rest }) => {
         disabled={isLoading}
         loading={loadingAction === 'shuffle'}
         icon={<ShuffleIcon />}
-      />
-      <LoadingButton
-        onClick={handleRadio}
-        label={translate('resources.artist.actions.radio')}
-        className={classes.button}
-        size={isMobile ? 'small' : 'medium'}
-        disabled={isLoading}
-        loading={loadingAction === 'radio'}
-        icon={<IoIosRadio className={classes.radioIcon} />}
       />
       {config.enableSharing && hasAlbumArtistContent && (
         <LoadingButton

@@ -29,10 +29,8 @@ import {
   defaultRowsPerPageOptions,
   getStoredPerPage,
 } from '../common'
-import { useDispatch } from 'react-redux'
 import { makeStyles } from '@material-ui/core/styles'
 import FavoriteBorderIcon from '@material-ui/icons/FavoriteBorder'
-import { setTrack } from '../actions'
 import { SongListActions } from './SongListActions'
 import { AlbumLinkField } from './AlbumLinkField'
 import { SongBulkActions, QualityInfo, useSelectedFields } from '../common'
@@ -132,14 +130,9 @@ const SongFilter = (props) => {
 
 const SongList = (props) => {
   const classes = useStyles()
-  const dispatch = useDispatch()
   const isXsmall = useMediaQuery((theme) => theme.breakpoints.down('xs'))
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up('md'))
   useResourceRefresh('song')
-
-  const handleRowClick = (id, basePath, record) => {
-    dispatch(setTrack(record))
-  }
 
   const toggleableFields = useMemo(() => {
     return {
@@ -227,7 +220,7 @@ const SongList = (props) => {
           <SongSimpleList />
         ) : (
           <SongDatagrid
-            rowClick={handleRowClick}
+            playAllOnClick
             contextAlwaysVisible={!isDesktop}
             classes={{ row: classes.row }}
           >
