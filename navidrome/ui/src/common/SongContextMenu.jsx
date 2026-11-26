@@ -25,6 +25,7 @@ import { LoveButton } from './LoveButton'
 import config from '../config'
 import { playSimilar } from './playbackActions.js'
 import { formatBytes } from '../utils'
+import { SongEditDialog } from '../song/SongEditDialog'
 
 const useStyles = makeStyles({
   noWrap: {
@@ -57,6 +58,7 @@ export const SongContextMenu = ({ resource, record, showLove, className }) => {
   const notify = useNotify()
   const dataProvider = useDataProvider()
   const [anchorEl, setAnchorEl] = useState(null)
+  const [editRecord, setEditRecord] = useState(null)
   const { permissions } = usePermissions()
 
   const options = {
@@ -110,6 +112,11 @@ export const SongContextMenu = ({ resource, record, showLove, className }) => {
       label: `${translate('ra.action.download')} (${formatBytes(record.size)})`,
       action: (record) =>
         dispatch(openDownloadMenu(record, DOWNLOAD_MENU_SONG)),
+    },
+    edit: {
+      enabled: permissions === 'admin' && !record.missing,
+      label: translate('resources.song.actions.edit'),
+      action: (record) => setEditRecord(record),
     },
     info: {
       enabled: true,
@@ -185,6 +192,7 @@ export const SongContextMenu = ({ resource, record, showLove, className }) => {
             ),
         )}
       </Menu>
+      <SongEditDialog record={editRecord} onClose={() => setEditRecord(null)} />
     </span>
   )
 }

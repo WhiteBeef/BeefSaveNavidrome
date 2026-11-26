@@ -239,6 +239,27 @@ const wrapperDataProvider = {
     httpClient(`${REST_URL}/metadata/${REFRESH_KIND[resource]}/${id}/refresh`, {
       method: 'POST',
     }).then(() => ({ data: { id } })),
+  uploadTrack: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return fetchData(`${REST_URL}/song/upload`, {
+      method: 'POST',
+      headers: new Headers({}),
+      body: formData,
+    })
+  },
+  updateSongMetadata: async (id, metadata, cover) => {
+    const formData = new FormData()
+    formData.append('title', metadata.title)
+    formData.append('artist', metadata.artist)
+    formData.append('album', metadata.album)
+    if (cover) formData.append('cover', cover)
+    return fetchData(`${REST_URL}/song/${encodeURIComponent(id)}/metadata`, {
+      method: 'PUT',
+      headers: new Headers({}),
+      body: formData,
+    })
+  },
   uploadImage: (resource, id, file) => {
     const formData = new FormData()
     formData.append('image', file)

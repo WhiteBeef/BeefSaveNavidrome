@@ -14,6 +14,7 @@ import (
 	"github.com/navidrome/navidrome/core"
 	"github.com/navidrome/navidrome/core/artwork"
 	"github.com/navidrome/navidrome/core/external"
+	"github.com/navidrome/navidrome/core/ffmpeg"
 	"github.com/navidrome/navidrome/core/metrics"
 	playlistsvc "github.com/navidrome/navidrome/core/playlists"
 	"github.com/navidrome/navidrome/core/quickconnect"
@@ -53,10 +54,12 @@ type Router struct {
 	imgUpload     artwork.Uploader
 	provider      external.Provider
 	quickConnect  quickconnect.QuickConnect
+	scanner       model.Scanner
+	ffmpeg        ffmpeg.FFmpeg
 }
 
-func New(ds model.DataStore, share core.Share, playlists playlistsvc.Playlists, insights metrics.Insights, libraryService core.Library, userService core.User, maintenance core.Maintenance, pluginManager PluginManager, imgUpload artwork.Uploader, provider external.Provider, quickConnect quickconnect.QuickConnect) *Router {
-	r := &Router{ds: ds, share: share, playlists: playlists, insights: insights, libs: libraryService, users: userService, maintenance: maintenance, pluginManager: pluginManager, imgUpload: imgUpload, provider: provider, quickConnect: quickConnect}
+func New(ds model.DataStore, share core.Share, playlists playlistsvc.Playlists, insights metrics.Insights, libraryService core.Library, userService core.User, maintenance core.Maintenance, pluginManager PluginManager, imgUpload artwork.Uploader, provider external.Provider, quickConnect quickconnect.QuickConnect, scanner model.Scanner, ffmpeg ffmpeg.FFmpeg) *Router {
+	r := &Router{ds: ds, share: share, playlists: playlists, insights: insights, libs: libraryService, users: userService, maintenance: maintenance, pluginManager: pluginManager, imgUpload: imgUpload, provider: provider, quickConnect: quickConnect, scanner: scanner, ffmpeg: ffmpeg}
 	r.Handler = r.routes()
 	return r
 }
@@ -97,6 +100,8 @@ func (api *Router) routes() http.Handler {
 		api.addMusicRoute(r)
 
 		r.With(adminOnlyMiddleware).Group(func(r chi.Router) {
+			r.Post("/song/upload", api.uploadSong)
+			r.Put("/song/{id}/metadata", api.updateSongMetadata)
 			api.addInspectRoute(r)
 			api.addConfigRoute(r)
 			api.addUserLibraryRoute(r)

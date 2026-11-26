@@ -8,6 +8,7 @@ import HomeIcon from '@material-ui/icons/Home'
 import AlbumIcon from '@material-ui/icons/Album'
 import SubMenu from './SubMenu'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
+import CloudUploadIcon from '@material-ui/icons/CloudUpload'
 import { humanize, pluralize } from 'inflection'
 import albumLists from '../album/albumLists'
 import LibrarySelector from '../common/LibrarySelector'
@@ -134,6 +135,16 @@ const Menu = ({ dense = false }) => {
           activeClassName={classes.active}
           primaryText={translate('menu.musicDownload')}
           leftIcon={<CloudDownloadIcon />}
+          sidebarIsOpen={open}
+          dense={dense}
+        />
+      )}
+      {localStorage.getItem('role') === 'admin' && (
+        <MenuItemLink
+          to="/upload"
+          activeClassName={classes.active}
+          primaryText={translate('home.uploadTrack')}
+          leftIcon={<CloudUploadIcon />}
           sidebarIsOpen={open}
           dense={dense}
         />

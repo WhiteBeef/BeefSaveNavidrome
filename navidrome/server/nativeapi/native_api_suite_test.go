@@ -41,7 +41,7 @@ func newTestRouter(ds model.DataStore, pls playlists.Playlists, pluginManager Pl
 	}
 	libs := core.NewLibrary(ds, nil, nil, events.NoopBroker(), noopPluginUnloader{})
 	users := core.NewUser(ds, noopPluginUnloader{})
-	return New(ds, nil, pls, nil, libs, users, nil, pluginManager, nil, provider, nil)
+	return New(ds, nil, pls, nil, libs, users, nil, pluginManager, nil, provider, nil, nil, nil)
 }
 
 func putUsers(ctx context.Context, ds model.DataStore, users ...*model.User) {

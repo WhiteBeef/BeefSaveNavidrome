@@ -8,6 +8,7 @@ import { Artwork } from '../common/Artwork'
 import { processSongsForPlayback } from '../common/playbackActions'
 import { useAudioPlayer } from '../audioplayer/audioPlayerContext'
 import { PlaybackControls } from '../audioplayer/PlaybackControls'
+import { SeekControl } from '../audioplayer/SeekControl'
 import { VolumeControl } from '../audioplayer/VolumeControl'
 import PlayerToolbar from '../audioplayer/PlayerToolbar'
 
@@ -40,8 +41,8 @@ const useStyles = makeStyles((theme) => ({
   currentCover: {
     width: 'min(38vh, 340px)',
     minWidth: 220,
-    aspectRatio: '1',
     marginBottom: theme.spacing(2.5),
+    aspectRatio: '1',
     border: '1px solid rgba(20, 184, 166, 0.18)',
     borderRadius: 28,
     background: '#101916',
@@ -372,6 +373,11 @@ const Home = () => {
             <Typography className={classes.currentArtist}>
               {currentSong.artist}
             </Typography>
+            <SeekControl
+              audioInstance={audioInstance}
+              trackDuration={currentSong.duration}
+              trackId={currentUuid}
+            />
             <div className={classes.currentControls}>
               <span className={classes.loveButton}>
                 <PlayerToolbar

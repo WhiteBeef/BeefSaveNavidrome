@@ -40,7 +40,8 @@
         "tags": "Additional Tags",
         "mappedTags": "Mapped tags",
         "rawTags": "Raw tags",
-        "missing": "Missing"
+        "missing": "Missing",
+        "coverArt": "Cover art"
       },
       "actions": {
         "addToQueue": "Play Later",
@@ -51,7 +52,13 @@
         "download": "Download",
         "playNext": "Play Next",
         "info": "Get Info",
-        "instantMix": "Instant Mix"
+        "instantMix": "Instant Mix",
+        "edit": "Edit song",
+        "changeCover": "Choose cover"
+      },
+      "notifications": {
+        "updated": "Song metadata updated",
+        "updateError": "Could not update song metadata"
       }
     },
     "album": {
@@ -671,7 +678,13 @@
     "title": "My wave",
     "previous": "Previous",
     "next": "Next",
-    "emptyDeck": "No tracks found in your library"
+    "emptyDeck": "No tracks found in your library",
+    "uploadTrack": "Upload track",
+    "uploadingTrack": "Uploading…",
+    "uploadHint": "Drop an audio file here or choose it from your device",
+    "uploadSuccess": "%{name} uploaded to the library",
+    "uploadTooLarge": "Audio file is larger than 500 MiB",
+    "uploadError": "Could not upload track"
   },
   "menu": {
     "home": "Home",
@@ -733,6 +746,7 @@
     "clickToPauseText": "Click to pause",
     "nextTrackText": "Next track",
     "previousTrackText": "Previous track",
+    "seekText": "Seek",
     "reloadText": "Reload",
     "volumeText": "Volume",
     "toggleLyricText": "Toggle lyrics",

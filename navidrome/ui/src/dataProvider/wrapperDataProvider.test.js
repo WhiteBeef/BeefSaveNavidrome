@@ -136,6 +136,41 @@ describe('wrapperDataProvider', () => {
     })
   })
 
+  describe('track upload', () => {
+    it('posts the file as multipart form data under the file field', async () => {
+      const file = new File(['audio'], 'track.mp3', { type: 'audio/mpeg' })
+
+      await wrapperDataProvider.uploadTrack(file)
+
+      const [url, options] = mockHttpClient.mock.calls[0]
+      expect(url).toBe('/api/song/upload')
+      expect(options.method).toBe('POST')
+      expect(options.body).toBeInstanceOf(FormData)
+      expect(options.body.get('file')).toBe(file)
+    })
+  })
+
+  describe('song metadata editing', () => {
+    it('puts metadata and cover as multipart form data', async () => {
+      const cover = new File(['img'], 'cover.jpg', { type: 'image/jpeg' })
+
+      await wrapperDataProvider.updateSongMetadata(
+        'song 1',
+        { title: 'Title', artist: 'Artist', album: 'Album' },
+        cover,
+      )
+
+      const [url, options] = mockHttpClient.mock.calls[0]
+      expect(url).toBe('/api/song/song%201/metadata')
+      expect(options.method).toBe('PUT')
+      expect(options.body).toBeInstanceOf(FormData)
+      expect(options.body.get('title')).toBe('Title')
+      expect(options.body.get('artist')).toBe('Artist')
+      expect(options.body.get('album')).toBe('Album')
+      expect(options.body.get('cover')).toBe(cover)
+    })
+  })
+
   describe('image upload', () => {
     it('posts the file as multipart form data under the image field', async () => {
       const file = new File(['img'], 'cover.png', { type: 'image/png' })
